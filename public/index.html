@@ -490,6 +490,48 @@
             background: #f8d7da;
             color: #721c24;
         }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .pagination button {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination span {
+            color: #666;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -588,7 +630,7 @@
             </div>
         </div>
 
-        <div class="history-section">
+        <div class="history-section" style="display: none;">
             <h2>📝 保存的信息 <span class="badge" id="historyCount">0</span></h2>
             <div id="historyList" class="history-list">
                 <div class="no-history">
@@ -604,8 +646,10 @@
         const STORAGE_KEY_LAST_BROWSER = 'lastUsedBrowser';
         const STORAGE_KEY_URL_HISTORY = 'urlHistory';
         const MAX_HISTORY_COUNT = 10;
+        const ITEMS_PER_PAGE = 5;
         let tasks = [];
         let countdownInterval = null;
+        let currentPage = 1;
 
         const selectYear = document.getElementById('selectYear');
         const selectMonth = document.getElementById('selectMonth');
@@ -1029,11 +1073,62 @@
             return labels[status] || status;
         }
 
+        function getPendingTasksCount() {
+            return tasks.filter(task => task.status === 'pending').length;
+        }
+
+        function getTotalPages() {
+            return Math.ceil(tasks.length / ITEMS_PER_PAGE);
+        }
+
+        function getCurrentPageTasks() {
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            return tasks.slice(start, end);
+        }
+
+        function goToPage(page) {
+            const totalPages = getTotalPages();
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTasks();
+        }
+
+        function renderPagination() {
+            const totalPages = getTotalPages();
+            if (totalPages <= 1) return '';
+
+            let paginationHtml = '<div class="pagination">';
+            
+            paginationHtml += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    paginationHtml += `<button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    paginationHtml += '<span>...</span>';
+                }
+            }
+            
+            paginationHtml += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+            paginationHtml += `<span>共 ${tasks.length} 条</span>`;
+            paginationHtml += '</div>';
+            
+            return paginationHtml;
+        }
+
         function renderTasks() {
             const taskList = document.getElementById('taskList');
             const taskCount = document.getElementById('taskCount');
             
-            taskCount.textContent = tasks.length;
+            const pendingCount = getPendingTasksCount();
+            taskCount.textContent = pendingCount;
+            
+            if (currentPage > getTotalPages() && getTotalPages() > 0) {
+                currentPage = getTotalPages();
+            }
+            
+            const pageTasks = getCurrentPageTasks();
             
             if (tasks.length === 0) {
                 taskList.innerHTML = `
@@ -1045,7 +1140,7 @@
                 return;
             }
 
-            taskList.innerHTML = tasks.map(task => {
+            let tasksHtml = pageTasks.map(task => {
                 const isHistory = task.status === 'executed' || task.status === 'cancelled';
                 const statusClass = task.status === 'executed' ? 'executed' : '';
                 
@@ -1090,6 +1185,9 @@
                 </div>
             `;
             }).join('');
+
+            tasksHtml += renderPagination();
+            taskList.innerHTML = tasksHtml;
 
             startCountdownUpdates();
         }
