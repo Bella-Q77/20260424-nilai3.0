@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+out/
+*.exe
+*.asar
+.vscode/
+.idea/
+npm-debug.log*

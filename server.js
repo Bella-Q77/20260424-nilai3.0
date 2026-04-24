@@ -14,6 +14,7 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 const scheduledTasks = new Map();
+const taskHistory = new Map();
 
 const browsers = {
   chrome: {
@@ -149,15 +150,41 @@ app.get('/api/browsers', (req, res) => {
 
 app.get('/api/tasks', (req, res) => {
   const tasks = [];
+  
   for (const [id, task] of scheduledTasks.entries()) {
     tasks.push({
       id,
       browser: task.browser,
       url: task.url,
       scheduledTime: task.scheduledTime,
-      createdAt: task.createdAt
+      createdAt: task.createdAt,
+      status: 'pending'
     });
   }
+  
+  for (const [id, task] of taskHistory.entries()) {
+    tasks.push({
+      id,
+      browser: task.browser,
+      url: task.url,
+      scheduledTime: task.scheduledTime,
+      createdAt: task.createdAt,
+      executedAt: task.executedAt,
+      status: task.status
+    });
+  }
+  
+  tasks.sort((a, b) => {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    
+    if (a.status === 'pending') {
+      return new Date(a.scheduledTime) - new Date(b.scheduledTime);
+    } else {
+      return new Date(b.executedAt || b.createdAt) - new Date(a.executedAt || a.createdAt);
+    }
+  });
+  
   res.json({ success: true, tasks });
 });
 
@@ -188,7 +215,14 @@ app.post('/api/schedule', (req, res) => {
     const task = cron.schedule(cronExpression, () => {
       console.log(`执行定时任务: ${taskId}`);
       openUrl(browser, url);
-      scheduledTasks.delete(taskId);
+      
+      const executedTask = scheduledTasks.get(taskId);
+      if (executedTask) {
+        executedTask.status = 'executed';
+        executedTask.executedAt = new Date().toISOString();
+        taskHistory.set(taskId, executedTask);
+        scheduledTasks.delete(taskId);
+      }
     });
 
     scheduledTasks.set(taskId, {
@@ -229,6 +263,10 @@ app.delete('/api/tasks/:id', (req, res) => {
 
   const task = scheduledTasks.get(taskId);
   task.cronTask.stop();
+  
+  task.status = 'cancelled';
+  task.cancelledAt = new Date().toISOString();
+  taskHistory.set(taskId, task);
   scheduledTasks.delete(taskId);
 
   res.json({ success: true, message: '任务已取消' });
