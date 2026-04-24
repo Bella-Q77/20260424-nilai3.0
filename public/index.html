@@ -367,6 +367,129 @@
         .overlay.show {
             display: block;
         }
+
+        .history-section {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .history-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-section h2 .badge {
+            background: #764ba2;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid #764ba2;
+        }
+
+        .history-item:hover {
+            background: #f0f1f3;
+        }
+
+        .history-item .history-url {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .history-item .history-time {
+            font-size: 11px;
+            color: #999;
+            margin-left: 10px;
+        }
+
+        .history-item .history-delete {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-left: 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .history-item .history-delete:hover {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .no-history .icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .task-item.executed {
+            opacity: 0.7;
+            border-left-color: #95a5a6;
+        }
+
+        .task-item.executed .task-url {
+            color: #7f8c8d;
+            text-decoration: line-through;
+        }
+
+        .task-item.executed .countdown {
+            color: #27ae60;
+        }
+
+        .task-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .task-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .task-status.executed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .task-status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -464,10 +587,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="history-section">
+            <h2>📝 保存的信息 <span class="badge" id="historyCount">0</span></h2>
+            <div id="historyList" class="history-list">
+                <div class="no-history">
+                    <div class="icon">📭</div>
+                    <p>暂无历史记录</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_BASE = '/api';
+        const STORAGE_KEY_LAST_BROWSER = 'lastUsedBrowser';
+        const STORAGE_KEY_URL_HISTORY = 'urlHistory';
+        const MAX_HISTORY_COUNT = 10;
         let tasks = [];
         let countdownInterval = null;
 
@@ -749,6 +885,88 @@
                 option.textContent = browser.name;
                 select.appendChild(option);
             });
+
+            const lastBrowser = localStorage.getItem(STORAGE_KEY_LAST_BROWSER);
+            if (lastBrowser) {
+                select.value = lastBrowser;
+            }
+        }
+
+        function saveLastBrowser(browserKey) {
+            localStorage.setItem(STORAGE_KEY_LAST_BROWSER, browserKey);
+        }
+
+        function loadUrlHistory() {
+            const history = localStorage.getItem(STORAGE_KEY_URL_HISTORY);
+            return history ? JSON.parse(history) : [];
+        }
+
+        function saveUrlHistory(history) {
+            localStorage.setItem(STORAGE_KEY_URL_HISTORY, JSON.stringify(history));
+        }
+
+        function addUrlToHistory(url, browser) {
+            let history = loadUrlHistory();
+            
+            history = history.filter(item => item.url !== url);
+            
+            history.unshift({
+                url: url,
+                browser: browser,
+                timestamp: new Date().toISOString()
+            });
+            
+            if (history.length > MAX_HISTORY_COUNT) {
+                history = history.slice(0, MAX_HISTORY_COUNT);
+            }
+            
+            saveUrlHistory(history);
+            renderUrlHistory();
+        }
+
+        function removeUrlFromHistory(index) {
+            let history = loadUrlHistory();
+            history.splice(index, 1);
+            saveUrlHistory(history);
+            renderUrlHistory();
+        }
+
+        function renderUrlHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyCount = document.getElementById('historyCount');
+            const history = loadUrlHistory();
+            
+            historyCount.textContent = history.length;
+            
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="no-history">
+                        <div class="icon">📭</div>
+                        <p>暂无历史记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = history.map((item, index) => `
+                <div class="history-item" onclick="useHistoryItem(${index})" data-index="${index}">
+                    <span class="history-url">${escapeHtml(item.url)}</span>
+                    <span class="history-time">${formatDateTime(item.timestamp)}</span>
+                    <button class="history-delete" onclick="event.stopPropagation(); removeUrlFromHistory(${index})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function useHistoryItem(index) {
+            const history = loadUrlHistory();
+            const item = history[index];
+            if (item) {
+                document.getElementById('url').value = item.url;
+                const browserSelect = document.getElementById('browser');
+                if (browserSelect.querySelector(`option[value="${item.browser}"]`)) {
+                    browserSelect.value = item.browser;
+                }
+            }
         }
 
         async function loadBrowsers() {
@@ -802,6 +1020,15 @@
             }
         }
 
+        function getStatusLabel(status) {
+            const labels = {
+                'pending': '待执行',
+                'executed': '已执行',
+                'cancelled': '已取消'
+            };
+            return labels[status] || status;
+        }
+
         function renderTasks() {
             const taskList = document.getElementById('taskList');
             const taskCount = document.getElementById('taskCount');
@@ -818,10 +1045,17 @@
                 return;
             }
 
-            taskList.innerHTML = tasks.map(task => `
-                <div class="task-item" data-id="${task.id}">
+            taskList.innerHTML = tasks.map(task => {
+                const isHistory = task.status === 'executed' || task.status === 'cancelled';
+                const statusClass = task.status === 'executed' ? 'executed' : '';
+                
+                return `
+                <div class="task-item ${statusClass}" data-id="${task.id}">
                     <div class="task-info">
-                        <div class="task-url">${escapeHtml(task.url)}</div>
+                        <div class="task-url">
+                            <span class="task-status ${task.status}">${getStatusLabel(task.status)}</span>
+                            ${escapeHtml(task.url)}
+                        </div>
                         <div class="task-details">
                             <div class="task-detail">
                                 <span class="icon">🌐</span>
@@ -831,16 +1065,31 @@
                                 <span class="icon">🕐</span>
                                 <span>${formatDateTime(task.scheduledTime)}</span>
                             </div>
+                            ${task.executedAt ? `
+                            <div class="task-detail">
+                                <span class="icon">✅</span>
+                                <span>执行时间: ${formatDateTime(task.executedAt)}</span>
+                            </div>
+                            ` : ''}
+                            ${task.cancelledAt ? `
+                            <div class="task-detail">
+                                <span class="icon">❌</span>
+                                <span>取消时间: ${formatDateTime(task.cancelledAt)}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         <div class="countdown" data-countdown="${task.id}">
-                            剩余时间: 计算中...
+                            ${isHistory ? '' : '剩余时间: 计算中...'}
                         </div>
                     </div>
+                    ${!isHistory ? `
                     <button class="btn btn-danger" onclick="cancelTask('${task.id}')">
                         取消
                     </button>
+                    ` : ''}
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             startCountdownUpdates();
         }
@@ -887,17 +1136,23 @@
 
         function updateCountdowns() {
             const now = new Date();
+            let needRefresh = false;
             
             tasks.forEach(task => {
                 const countdownEl = document.querySelector(`[data-countdown="${task.id}"]`);
                 if (!countdownEl) return;
+                
+                if (task.status !== 'pending') {
+                    countdownEl.textContent = '';
+                    return;
+                }
 
                 const scheduled = new Date(task.scheduledTime);
                 const diff = scheduled - now;
 
                 if (diff <= 0) {
                     countdownEl.textContent = '即将执行...';
-                    setTimeout(() => loadTasks(), 1000);
+                    needRefresh = true;
                 } else {
                     const minutes = Math.floor(diff / 60000);
                     const seconds = Math.floor((diff % 60000) / 1000);
@@ -911,6 +1166,10 @@
                     }
                 }
             });
+            
+            if (needRefresh) {
+                setTimeout(() => loadTasks(), 2000);
+            }
         }
 
         async function cancelTask(taskId) {
@@ -986,6 +1245,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    saveLastBrowser(browser);
+                    addUrlToHistory(url, browser);
                     showAlert('定时任务创建成功！', 'success');
                     await loadTasks();
                 } else {
@@ -1025,6 +1286,14 @@
             return true;
         }
 
+        function loadLastUrl() {
+            const history = loadUrlHistory();
+            if (history.length > 0) {
+                const lastItem = history[0];
+                document.getElementById('url').value = lastItem.url;
+            }
+        }
+
         async function init() {
             if (!checkProtocol()) {
                 return;
@@ -1033,6 +1302,10 @@
             await loadBrowsers();
             
             initTimePicker();
+            
+            loadLastUrl();
+            
+            renderUrlHistory();
             
             await loadTasks();
         }
