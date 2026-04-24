@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器定时打开工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group label .required {
+            color: #e74c3c;
+            margin-left: 3px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control:hover {
+            border-color: #b3b3b3;
+        }
+
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .time-picker-inline {
+            width: 100%;
+        }
+
+        .time-display {
+            padding: 12px 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            background: #f8f9ff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .time-selector-container {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .time-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .time-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .time-col {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .time-col label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .time-select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 25px;
+        }
+
+        .time-select:hover {
+            border-color: #667eea;
+        }
+
+        .time-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .time-select.has-value {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .tasks-section {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .tasks-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tasks-section h2 .badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: #f0f1f3;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-url {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+
+        .task-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .task-detail {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .task-detail .icon {
+            font-size: 14px;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .no-tasks .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .countdown {
+            font-size: 11px;
+            color: #e74c3c;
+            margin-top: 5px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 浏览器定时打开工具</h1>
+            <p>选择浏览器、输入网址、设定时间，自动为您打开</p>
+        </div>
+
+        <div class="form-section">
+            <div id="alertContainer"></div>
+
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label for="browser">选择浏览器 <span class="required">*</span></label>
+                    <select id="browser" class="form-control" required>
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="url">输入网址 <span class="required">*</span></label>
+                    <input 
+                        type="url" 
+                        id="url" 
+                        class="form-control" 
+                        placeholder="https://www.example.com" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>定时时间 <span class="required">*</span></label>
+                    <div class="time-picker-inline">
+                        <div class="time-display" id="timeDisplay">请选择时间</div>
+                        <div class="time-selector-container">
+                            <div class="time-row">
+                                <div class="time-col">
+                                    <label for="selectYear">年</label>
+                                    <select id="selectYear" class="time-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="time-col">
+                                    <label for="selectMonth">月</label>
+                                    <select id="selectMonth" class="time-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="time-col">
+                                    <label for="selectDay">日</label>
+                                    <select id="selectDay" class="time-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="time-row">
+                                <div class="time-col">
+                                    <label for="selectHour">时</label>
+                                    <select id="selectHour" class="time-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="time-col">
+                                    <label for="selectMinute">分</label>
+                                    <select id="selectMinute" class="time-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="time-col" style="visibility: hidden;">
+                                    <label>&nbsp;</label>
+                                    <select class="time-select" disabled>
+                                        <option value="">占位</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="scheduledTime" required>
+                        <div id="countdown" class="countdown"></div>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary">
+                    创建定时任务
+                </button>
+            </form>
+        </div>
+
+        <div class="tasks-section">
+            <h2>📋 定时任务列表 <span class="badge" id="taskCount">0</span></h2>
+            <div id="taskList" class="task-list">
+                <div class="no-tasks">
+                    <div class="icon">⏰</div>
+                    <p>暂无定时任务</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let tasks = [];
+        let countdownInterval = null;
+
+        const selectYear = document.getElementById('selectYear');
+        const selectMonth = document.getElementById('selectMonth');
+        const selectDay = document.getElementById('selectDay');
+        const selectHour = document.getElementById('selectHour');
+        const selectMinute = document.getElementById('selectMinute');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        function formatTimeDisplay(date) {
+            if (!date) return '请选择时间';
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function initSelectors() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            
+            selectYear.innerHTML = '<option value="">请选择</option>';
+            for (let i = 0; i < 5; i++) {
+                const year = currentYear + i;
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year + '年';
+                selectYear.appendChild(option);
+            }
+        }
+
+        function updateMonthOptions() {
+            const selectedYear = parseInt(selectYear.value);
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            
+            const currentValue = selectMonth.value;
+            selectMonth.innerHTML = '<option value="">请选择</option>';
+            
+            for (let i = 1; i <= 12; i++) {
+                const isDisabled = (selectedYear === currentYear && i < currentMonth);
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + '月';
+                if (isDisabled) {
+                    option.disabled = true;
+                }
+                selectMonth.appendChild(option);
+            }
+            
+            if (currentValue && parseInt(currentValue) >= currentMonth) {
+                selectMonth.value = currentValue;
+            }
+        }
+
+        function updateDayOptions() {
+            const selectedYear = parseInt(selectYear.value);
+            const selectedMonth = parseInt(selectMonth.value);
+            
+            if (!selectedYear || !selectedMonth) {
+                selectDay.innerHTML = '<option value="">请选择</option>';
+                return;
+            }
+            
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const currentDay = now.getDate();
+            
+            const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
+            const currentValue = selectDay.value;
+            
+            selectDay.innerHTML = '<option value="">请选择</option>';
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                const isDisabled = (selectedYear === currentYear && 
+                                    selectedMonth === currentMonth && 
+                                    i < currentDay);
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + '日';
+                if (isDisabled) {
+                    option.disabled = true;
+                }
+                selectDay.appendChild(option);
+            }
+            
+            if (currentValue && parseInt(currentValue) >= currentDay) {
+                selectDay.value = currentValue;
+            }
+        }
+
+        function updateHourOptions() {
+            const selectedYear = parseInt(selectYear.value);
+            const selectedMonth = parseInt(selectMonth.value);
+            const selectedDay = parseInt(selectDay.value);
+            
+            if (!selectedYear || !selectedMonth || !selectedDay) {
+                selectHour.innerHTML = '<option value="">请选择</option>';
+                return;
+            }
+            
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const currentDay = now.getDate();
+            const currentHour = now.getHours();
+            
+            const isToday = (selectedYear === currentYear && 
+                            selectedMonth === currentMonth && 
+                            selectedDay === currentDay);
+            
+            const currentValue = selectHour.value;
+            
+            selectHour.innerHTML = '<option value="">请选择</option>';
+            
+            for (let i = 0; i < 24; i++) {
+                const isDisabled = isToday && i < currentHour;
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = String(i).padStart(2, '0') + '时';
+                if (isDisabled) {
+                    option.disabled = true;
+                }
+                selectHour.appendChild(option);
+            }
+            
+            if (currentValue && parseInt(currentValue) >= currentHour) {
+                selectHour.value = currentValue;
+            }
+        }
+
+        function updateMinuteOptions() {
+            const selectedYear = parseInt(selectYear.value);
+            const selectedMonth = parseInt(selectMonth.value);
+            const selectedDay = parseInt(selectDay.value);
+            const selectedHour = parseInt(selectHour.value);
+            
+            if (!selectedYear || !selectedMonth || !selectedDay || isNaN(selectedHour)) {
+                selectMinute.innerHTML = '<option value="">请选择</option>';
+                return;
+            }
+            
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const currentDay = now.getDate();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            
+            const isToday = (selectedYear === currentYear && 
+                            selectedMonth === currentMonth && 
+                            selectedDay === currentDay &&
+                            selectedHour === currentHour);
+            
+            selectMinute.innerHTML = '<option value="">请选择</option>';
+            
+            for (let i = 0; i < 60; i++) {
+                const isDisabled = isToday && i <= currentMinute;
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = String(i).padStart(2, '0') + '分';
+                if (isDisabled) {
+                    option.disabled = true;
+                }
+                selectMinute.appendChild(option);
+            }
+        }
+
+        function updateTimeDisplay() {
+            const year = parseInt(selectYear.value);
+            const month = parseInt(selectMonth.value);
+            const day = parseInt(selectDay.value);
+            const hour = parseInt(selectHour.value);
+            const minute = parseInt(selectMinute.value);
+            
+            if (!isNaN(year) && !isNaN(month) && !isNaN(day) && !isNaN(hour) && !isNaN(minute)) {
+                const selectedDate = new Date(year, month - 1, day, hour, minute);
+                const formatted = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                
+                document.getElementById('scheduledTime').value = formatted;
+                timeDisplay.textContent = formatTimeDisplay(selectedDate);
+            }
+        }
+
+        function initTimePicker() {
+            initSelectors();
+            
+            const now = new Date();
+            const defaultTime = new Date(now.getTime() + 60000);
+            
+            selectYear.value = defaultTime.getFullYear();
+            selectYear.classList.add('has-value');
+            updateMonthOptions();
+            
+            selectMonth.value = defaultTime.getMonth() + 1;
+            selectMonth.classList.add('has-value');
+            updateDayOptions();
+            
+            selectDay.value = defaultTime.getDate();
+            selectDay.classList.add('has-value');
+            updateHourOptions();
+            
+            const defaultHour = defaultTime.getHours();
+            let defaultMinute = defaultTime.getMinutes() + 1;
+            if (defaultMinute >= 60) {
+                defaultMinute = 0;
+            }
+            
+            selectHour.value = defaultHour;
+            selectHour.classList.add('has-value');
+            updateMinuteOptions();
+            
+            selectMinute.value = defaultMinute;
+            selectMinute.classList.add('has-value');
+            
+            updateTimeDisplay();
+        }
+
+        selectYear.addEventListener('change', function() {
+            this.classList.toggle('has-value', this.value !== '');
+            updateMonthOptions();
+            updateDayOptions();
+            updateHourOptions();
+            updateMinuteOptions();
+            updateTimeDisplay();
+        });
+
+        selectMonth.addEventListener('change', function() {
+            this.classList.toggle('has-value', this.value !== '');
+            updateDayOptions();
+            updateHourOptions();
+            updateMinuteOptions();
+            updateTimeDisplay();
+        });
+
+        selectDay.addEventListener('change', function() {
+            this.classList.toggle('has-value', this.value !== '');
+            updateHourOptions();
+            updateMinuteOptions();
+            updateTimeDisplay();
+        });
+
+        selectHour.addEventListener('change', function() {
+            this.classList.toggle('has-value', this.value !== '');
+            updateMinuteOptions();
+            updateTimeDisplay();
+        });
+
+        selectMinute.addEventListener('change', function() {
+            this.classList.toggle('has-value', this.value !== '');
+            updateTimeDisplay();
+        });
+
+        const fallbackBrowsers = [
+            { key: 'default', name: '系统默认浏览器' },
+            { key: 'chrome', name: 'Google Chrome' },
+            { key: 'edge', name: 'Microsoft Edge' },
+            { key: 'firefox', name: 'Mozilla Firefox' },
+            { key: '360', name: '360安全浏览器' }
+        ];
+
+        function renderBrowserList(browsers) {
+            const select = document.getElementById('browser');
+            select.innerHTML = '<option value="">请选择浏览器</option>';
+            
+            browsers.forEach(browser => {
+                const option = document.createElement('option');
+                option.value = browser.key;
+                option.textContent = browser.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadBrowsers() {
+            try {
+                const response = await fetch(`${API_BASE}/browsers`);
+                if (!response.ok) {
+                    throw new Error('服务器响应错误');
+                }
+                const data = await response.json();
+                
+                if (data.success && data.browsers && data.browsers.length > 0) {
+                    renderBrowserList(data.browsers);
+                } else {
+                    renderBrowserList(fallbackBrowsers);
+                }
+            } catch (error) {
+                console.error('加载浏览器列表失败:', error);
+                renderBrowserList(fallbackBrowsers);
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <span>${type === 'success' ? '✅' : '❌'}</span>
+                <span>${message}</span>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode === container) {
+                    container.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    tasks = data.tasks;
+                    renderTasks();
+                }
+            } catch (error) {
+                console.error('加载任务列表失败:', error);
+            }
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            const taskCount = document.getElementById('taskCount');
+            
+            taskCount.textContent = tasks.length;
+            
+            if (tasks.length === 0) {
+                taskList.innerHTML = `
+                    <div class="no-tasks">
+                        <div class="icon">⏰</div>
+                        <p>暂无定时任务</p>
+                    </div>
+                `;
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <div class="task-item" data-id="${task.id}">
+                    <div class="task-info">
+                        <div class="task-url">${escapeHtml(task.url)}</div>
+                        <div class="task-details">
+                            <div class="task-detail">
+                                <span class="icon">🌐</span>
+                                <span>${getBrowserName(task.browser)}</span>
+                            </div>
+                            <div class="task-detail">
+                                <span class="icon">🕐</span>
+                                <span>${formatDateTime(task.scheduledTime)}</span>
+                            </div>
+                        </div>
+                        <div class="countdown" data-countdown="${task.id}">
+                            剩余时间: 计算中...
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="cancelTask('${task.id}')">
+                        取消
+                    </button>
+                </div>
+            `).join('');
+
+            startCountdownUpdates();
+        }
+
+        function getBrowserName(key) {
+            const browserNames = {
+                'default': '系统默认浏览器',
+                'chrome': 'Google Chrome',
+                'edge': 'Microsoft Edge',
+                'firefox': 'Mozilla Firefox',
+                '360': '360安全浏览器'
+            };
+            return browserNames[key] || key;
+        }
+
+        function formatDateTime(dateTime) {
+            const date = new Date(dateTime);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function startCountdownUpdates() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                updateCountdowns();
+            }, 1000);
+
+            updateCountdowns();
+        }
+
+        function updateCountdowns() {
+            const now = new Date();
+            
+            tasks.forEach(task => {
+                const countdownEl = document.querySelector(`[data-countdown="${task.id}"]`);
+                if (!countdownEl) return;
+
+                const scheduled = new Date(task.scheduledTime);
+                const diff = scheduled - now;
+
+                if (diff <= 0) {
+                    countdownEl.textContent = '即将执行...';
+                    setTimeout(() => loadTasks(), 1000);
+                } else {
+                    const minutes = Math.floor(diff / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    
+                    if (minutes > 60) {
+                        const hours = Math.floor(minutes / 60);
+                        const remainingMins = minutes % 60;
+                        countdownEl.textContent = `剩余时间: ${hours}小时 ${remainingMins}分钟`;
+                    } else {
+                        countdownEl.textContent = `剩余时间: ${minutes}分钟 ${seconds}秒`;
+                    }
+                }
+            });
+        }
+
+        async function cancelTask(taskId) {
+            if (!confirm('确定要取消这个定时任务吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('任务已取消', 'success');
+                    await loadTasks();
+                } else {
+                    showAlert(data.message || '取消任务失败', 'error');
+                }
+            } catch (error) {
+                console.error('取消任务失败:', error);
+                showAlert('取消任务失败，请重试', 'error');
+            }
+        }
+
+        document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const browser = document.getElementById('browser').value;
+            const url = document.getElementById('url').value;
+            const scheduledTime = document.getElementById('scheduledTime').value;
+
+            if (!browser) {
+                showAlert('请选择浏览器', 'error');
+                return;
+            }
+
+            if (!url) {
+                showAlert('请输入网址', 'error');
+                return;
+            }
+
+            if (!scheduledTime) {
+                showAlert('请选择定时时间', 'error');
+                return;
+            }
+
+            const scheduledDate = new Date(scheduledTime);
+            const now = new Date();
+            
+            if (scheduledDate <= now) {
+                showAlert('定时时间必须大于当前时间', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span> 创建中...';
+
+            try {
+                const response = await fetch(`${API_BASE}/schedule`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        browser,
+                        url,
+                        scheduledTime
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('定时任务创建成功！', 'success');
+                    await loadTasks();
+                } else {
+                    showAlert(data.message || '创建任务失败', 'error');
+                }
+            } catch (error) {
+                console.error('创建任务失败:', error);
+                let errorMsg = '创建任务失败，请重试';
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMsg = '无法连接到服务器，请确认：<br>1. 服务器已启动（运行 npm start 或 node server.js）<br>2. 通过 http://localhost:3000/ 访问页面';
+                }
+                showAlert(errorMsg, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '创建定时任务';
+            }
+        });
+
+        function checkProtocol() {
+            if (window.location.protocol === 'file:') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = `
+                    <span>⚠️</span>
+                    <span><strong>检测到直接打开 HTML 文件！</strong><br>
+                    请通过服务器访问：<code style="background: #fff3cd; padding: 2px 6px; border-radius: 4px;">http://localhost:3000/</code><br>
+                    步骤：<br>
+                    1. 在项目目录运行：<code style="background: #fff3cd; padding: 2px 6px; border-radius: 4px;">npm start</code> 或 <code style="background: #fff3cd; padding: 2px 6px; border-radius: 4px;">node server.js</code><br>
+                    2. 浏览器打开：<code style="background: #fff3cd; padding: 2px 6px; border-radius: 4px;">http://localhost:3000/</code>
+                    </span>
+                `;
+                const container = document.getElementById('alertContainer');
+                container.innerHTML = '';
+                container.appendChild(alertDiv);
+                return false;
+            }
+            return true;
+        }
+
+        async function init() {
+            if (!checkProtocol()) {
+                return;
+            }
+            
+            await loadBrowsers();
+            
+            initTimePicker();
+            
+            await loadTasks();
+        }
+
+        init();
+    </script>
+</body>
+</html>
