@@ -559,8 +559,10 @@
                         id="url" 
                         class="form-control" 
                         placeholder="https://www.example.com" 
+                        list="urlHistoryList"
                         required
                     >
+                    <datalist id="urlHistoryList"></datalist>
                 </div>
 
                 <div class="form-group">
@@ -966,6 +968,7 @@
             
             saveUrlHistory(history);
             renderUrlHistory();
+            updateUrlHistoryDatalist();
         }
 
         function removeUrlFromHistory(index) {
@@ -973,6 +976,21 @@
             history.splice(index, 1);
             saveUrlHistory(history);
             renderUrlHistory();
+            updateUrlHistoryDatalist();
+        }
+
+        function updateUrlHistoryDatalist() {
+            const datalist = document.getElementById('urlHistoryList');
+            const history = loadUrlHistory();
+            
+            datalist.innerHTML = '';
+            
+            history.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.url;
+                option.label = item.url;
+                datalist.appendChild(option);
+            });
         }
 
         function renderUrlHistory() {
@@ -1404,6 +1422,8 @@
             loadLastUrl();
             
             renderUrlHistory();
+            
+            updateUrlHistoryDatalist();
             
             await loadTasks();
         }
